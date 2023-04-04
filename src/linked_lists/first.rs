@@ -1,3 +1,7 @@
+///
+/// A Bad Singly-Linked Stack
+///
+
 use std::mem;
 
 pub struct List
