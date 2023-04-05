@@ -1,7 +1,6 @@
 ///
 /// A Bad Singly-Linked Stack
 ///
-
 use std::mem;
 
 pub struct List
@@ -97,19 +96,3 @@ mod test
 		assert_eq!( list.pop(), None );
 	}
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
