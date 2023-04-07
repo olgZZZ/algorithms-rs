@@ -48,17 +48,17 @@ impl< 'a, T > List< 'a, T >
 
   pub fn pop( &'a mut self ) -> Option< T >
   {
-  	self.head.take().map( | head | 
-  	{
-  		let head = *head;
-  		self.head = head.next;
+    self.head.take().map( | head | 
+    {
+      let head = *head;
+      self.head = head.next;
 
-  		if self.head.is_none()
-  		{
-  			self.tail = None;
-  		}
-  		head.elem
-  	})
+      if self.head.is_none()
+      {
+        self.tail = None;
+      }
+      head.elem
+    })
   }
 }
 
