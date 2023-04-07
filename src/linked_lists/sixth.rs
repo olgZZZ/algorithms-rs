@@ -7,6 +7,8 @@ use std::fmt::{ self, Debug };
 use std::cmp::Ordering;
 use std::hash::{ Hash, Hasher };
 
+mod cursor;
+
 pub struct LinkedList< T >
 {
 	front : Link< T >,
@@ -226,6 +228,16 @@ impl< T > LinkedList< T >
 	{
 		self.len
 	}
+
+  pub fn is_empty( &self ) -> bool
+  {
+    self.len == 0
+  }
+
+  pub fn clear( &mut self )
+  {
+    while self.pop_front().is_some() {}
+  }
 }
 
 impl< T > Drop for LinkedList< T >
@@ -512,6 +524,7 @@ impl< T > ExactSizeIterator for IntoIter< T >
 
 
 
+
 #[ cfg( test ) ]
 mod test
 {
@@ -565,7 +578,7 @@ mod test
     assert_eq!( list.len(), 0 );
 	}
 
-  #[test]
+  #[ test ]
   fn test_basic()
   {
     let mut m = LinkedList::new();
@@ -606,7 +619,7 @@ mod test
     assert_eq!( n.pop_front(), Some( 1 ) );
   }
 
-  #[test]
+  #[ test ]
   fn test_iterator()
   {
     let m = generate_test();
@@ -624,7 +637,7 @@ mod test
     assert_eq!( it.next(), None );
   }
 
-  #[test]
+  #[ test ]
   fn test_iterator_double_end()
   {
     let mut n = LinkedList::new();
@@ -643,7 +656,7 @@ mod test
     assert_eq!( it.next(), None );
   }
 
-  #[test]
+  #[ test ]
   fn test_rev_iter()
   {
     let m = generate_test();
@@ -661,7 +674,7 @@ mod test
     assert_eq!( it.next(), None );
   }
 
-  #[test]
+  #[ test ]
   fn test_mut_iter()
   {
     let mut m = generate_test();
@@ -684,7 +697,7 @@ mod test
     assert!( it.next().is_none() );
   }
 
-  #[test]
+  #[ test ]
   fn test_iterator_mut_double_end()
   {
     let mut n = LinkedList::new();
@@ -703,7 +716,7 @@ mod test
     assert!( it.next().is_none() );
   }
 
-  #[test]
+  #[ test ]
   fn test_eq()
   {
     let mut n: LinkedList< u8 > = list_from( &[] );
@@ -719,7 +732,7 @@ mod test
     assert!( n != m );
   }
 
-  #[test]
+  #[ test ]
   fn test_ord()
   {
     let n = list_from( &[] );
@@ -730,7 +743,7 @@ mod test
     assert!( n >= n );
   }
 
-  #[test]
+  #[ test ]
   fn test_ord_nan()
   {
     let nan = 0.0f64 / 0.0;
@@ -763,7 +776,7 @@ mod test
     assert!( s >= one );
   }
 
-  #[test]
+  #[ test ]
   fn test_debug()
   {
     let list: LinkedList< i32 > = ( 0..10 ).collect();
@@ -776,7 +789,7 @@ mod test
     assert_eq!( format!( "{:?}", list ), r#"["just", "one", "test", "more"]"# );
   }
 
-  #[test]
+  #[ test ]
   fn test_hashmap()
   {
     // Check that HashMap works with this as a key
@@ -797,6 +810,136 @@ mod test
     assert_eq!( map.remove( &list2 ), Some( "list2" ) );
 
     assert!( map.is_empty() );
+  }
+
+  #[ test ]
+  fn test_cursor_move_peek()
+  {
+    let mut m: LinkedList< u32 > = LinkedList::new();
+    m.extend( [ 1, 2, 3, 4, 5, 6 ] );
+    let mut cursor = m.cursor_mut();
+    cursor.move_next();
+    assert_eq!( cursor.current(), Some( &mut 1 ) );
+    assert_eq!( cursor.peek_next(), Some( &mut 2) );
+    assert_eq!( cursor.peek_prev(), None );
+    assert_eq!( cursor.index(), Some( 0 ) );
+    cursor.move_prev();
+    assert_eq!( cursor.current(), None );
+    assert_eq!( cursor.peek_next(), Some( &mut 1 ) );
+    assert_eq!( cursor.peek_prev(), Some( &mut 6 ) );
+    assert_eq!( cursor.index(), None);
+    cursor.move_next();
+    cursor.move_next();
+    assert_eq!( cursor.current(), Some( &mut 2 ) );
+    assert_eq!( cursor.peek_next(), Some( &mut 3 ) );
+    assert_eq!( cursor.peek_prev(), Some( &mut 1 ) );
+    assert_eq!( cursor.index(), Some( 1 ) );
+
+    let mut cursor = m.cursor_mut();
+    cursor.move_prev();
+    assert_eq!( cursor.current(), Some( &mut 6 ) );
+    assert_eq!( cursor.peek_next(), None );
+    assert_eq!( cursor.peek_prev(), Some( &mut 5 ) );
+    assert_eq!( cursor.index(), Some( 5 ) );
+    cursor.move_next();
+    assert_eq!( cursor.current(), None );
+    assert_eq!( cursor.peek_next(), Some( &mut 1 ) );
+    assert_eq!( cursor.peek_prev(), Some( &mut 6 ) );
+    assert_eq!( cursor.index(), None );
+    cursor.move_prev();
+    cursor.move_prev();
+    assert_eq!( cursor.current(), Some( &mut 5 ) );
+    assert_eq!( cursor.peek_next(), Some( &mut 6 ) );
+    assert_eq!( cursor.peek_prev(), Some( &mut 4 ) );
+    assert_eq!( cursor.index(), Some( 4 ) );
+  }
+
+  #[ test ]
+  fn test_cursor_mut_insert()
+  {
+    let mut m: LinkedList< u32 > = LinkedList::new();
+    m.extend( [ 1, 2, 3, 4, 5, 6 ] );
+    let mut cursor = m.cursor_mut();
+    cursor.move_next();
+    cursor.splice_before( Some( 7 ).into_iter().collect() );
+    cursor.splice_after( Some( 8 ).into_iter().collect() );
+
+    // check_links(&m);
+    assert_eq!
+    (
+      m.iter().cloned().collect::< Vec< _ > >(),
+      &[ 7, 1, 8, 2, 3, 4, 5, 6 ]
+    );
+
+    let mut cursor = m.cursor_mut();
+    cursor.move_next();
+    cursor.move_prev();
+    cursor.splice_before( Some( 9 ).into_iter().collect() );
+    cursor.splice_after( Some( 10 ).into_iter().collect() );
+    check_links( &m );
+
+    assert_eq!
+    (
+      m.iter().cloned().collect::< Vec< _ > >(),
+      &[ 10, 7, 1, 8, 2, 3, 4, 5, 6, 9 ]
+    );
+
+    let mut m: LinkedList< u32 > = LinkedList::new();
+    m.extend( [ 1, 8, 2, 3, 4, 5, 6 ] );
+    let mut cursor = m.cursor_mut();
+    cursor.move_next();
+    let mut p: LinkedList< u32 > = LinkedList::new();
+    p.extend( [ 100, 101, 102, 103 ] );
+    let mut q: LinkedList< u32 > = LinkedList::new();
+    q.extend( [ 200, 201, 202, 203 ] );
+    cursor.splice_after( p );
+    cursor.splice_before( q );
+    check_links( &m );
+
+    assert_eq!
+    (
+      m.iter().cloned().collect::< Vec< _ > >(),
+      &[ 200, 201, 202, 203, 1, 100, 101, 102, 103, 8, 2, 3, 4, 5, 6 ]
+    );
+
+    let mut cursor = m.cursor_mut();
+    cursor.move_next();
+    cursor.move_prev();
+    let tmp = cursor.split_before();
+    assert_eq!( m.into_iter().collect::< Vec< _ > >(), &[] );
+    m = tmp;
+    let mut cursor = m.cursor_mut();
+    cursor.move_next();
+    cursor.move_next();
+    cursor.move_next();
+    cursor.move_next();
+    cursor.move_next();
+    cursor.move_next();
+    cursor.move_next();
+    let tmp = cursor.split_after();
+
+    assert_eq!
+    (
+      tmp.into_iter().collect::< Vec< _ > >(),
+      &[ 102, 103, 8, 2, 3, 4, 5, 6 ]
+    );
+
+    check_links( &m );
+
+    assert_eq!
+    (
+      m.iter().cloned().collect::< Vec< _ > >(),
+      &[ 200, 201, 202, 203, 1, 100, 101 ]
+    );
+  }
+
+  fn check_links< T: Eq + std::fmt::Debug >( list: &LinkedList< T > )
+  {
+    let from_front: Vec< _ > = list.iter().collect();
+    let from_back: Vec< _ > = list.iter().rev().collect();
+    let re_reved: Vec< _ > = from_back.into_iter().rev().collect();
+
+    assert_eq!( from_front, re_reved );
   }
 } 
 
