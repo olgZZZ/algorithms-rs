@@ -11,223 +11,223 @@ mod cursor;
 
 pub struct LinkedList< T >
 {
-	front : Link< T >,
-	back : Link< T >,
-	len : usize,
-	_pdt : PhantomData< T >,
+  front : Link< T >,
+  back : Link< T >,
+  len : usize,
+  _pdt : PhantomData< T >,
 }
 
 type Link< T > = Option< NonNull< Node< T > > >;
 
 struct Node< T >
 {
-	front : Link< T >,
-	back : Link< T >,
-	elem : T,
+  front : Link< T >,
+  back : Link< T >,
+  elem : T,
 }
 
 pub struct Iter< 'a, T >
 {
-	front : Link< T >,
-	back : Link< T >,
-	len : usize,
-	_pdt : PhantomData< &'a T >
+  front : Link< T >,
+  back : Link< T >,
+  len : usize,
+  _pdt : PhantomData< &'a T >
 }
 
 pub struct IterMut< 'a, T >
 {
-	front : Link< T >,
-	back : Link< T >,
-	len : usize,
-	_pdt : PhantomData< &'a mut T >
+  front : Link< T >,
+  back : Link< T >,
+  len : usize,
+  _pdt : PhantomData< &'a mut T >
 }
 
 pub struct IntoIter< T >
 {
-	list : LinkedList< T >,
+  list : LinkedList< T >,
 }
 
 impl< T > LinkedList< T >
 {
-	pub fn new() -> Self
-	{
-		Self
-		{
-			front : None,
-			back : None,
-			len : 0,
-			_pdt : PhantomData,
-		}
-	}
+  pub fn new() -> Self
+  {
+    Self
+    {
+      front : None,
+      back : None,
+      len : 0,
+      _pdt : PhantomData,
+    }
+  }
 
-	pub fn push_front( &mut self, elem : T )
-	{
-		unsafe
-		{
-			let new = NonNull::new_unchecked( Box::into_raw( Box::new( Node
-			{
-				front : None,
-				back : None,
-				elem,
-			})));
+  pub fn push_front( &mut self, elem : T )
+  {
+    unsafe
+    {
+      let new = NonNull::new_unchecked( Box::into_raw( Box::new( Node
+      {
+        front : None,
+        back : None,
+        elem,
+      })));
 
-			if let Some( old ) = self.front
-			{
-				( *old.as_ptr() ).front = Some( new );
-				( *new.as_ptr() ).back = Some ( old );
-			}
-			else
-			{
-			  self.back = Some( new );
-			}
+      if let Some( old ) = self.front
+      {
+        ( *old.as_ptr() ).front = Some( new );
+        ( *new.as_ptr() ).back = Some ( old );
+      }
+      else
+      {
+        self.back = Some( new );
+      }
 
-			self.front = Some( new );
-			self.len += 1;
-		}
-	}
+      self.front = Some( new );
+      self.len += 1;
+    }
+  }
 
-	pub fn pop_front( &mut self ) -> Option< T >
-	{
-		unsafe
-		{
-			self.front.map( | node |
-			{
-				let boxed_node = Box::from_raw( node.as_ptr() );
-				let result = boxed_node.elem;
+  pub fn pop_front( &mut self ) -> Option< T >
+  {
+    unsafe
+    {
+      self.front.map( | node |
+      {
+        let boxed_node = Box::from_raw( node.as_ptr() );
+        let result = boxed_node.elem;
 
-				self.front = boxed_node.back;
-				if let Some( new ) = self.front
-				{
-					( *new.as_ptr() ).front = None;
-				}
-				else
-				{
-					self.back = None;
-				}
-
-				self.len -= 1;
-				result
-			})
-		} 
-	}
-
-	pub fn push_back( &mut self, elem : T )
-	{
-		unsafe
-		{
-			let new = NonNull::new_unchecked( Box::into_raw( Box::new( Node
-			{
-				back : None,
-				front : None,
-				elem,
-			})));
-
-			if let Some( old ) = self.back
-			{
-				( *old.as_ptr() ).back = Some( new );
-				( *new.as_ptr() ).front = Some( old );
-			}
-			else
-			{
-				self.front = Some( new );
-			}
-
-			self.back = Some( new );
-			self.len += 1;
-		}
-	}
-
-	pub fn pop_back( &mut self ) -> Option< T >
-	{
-		unsafe
-		{
-			self.back.map( | node|
-			{
-				let boxed_node = Box::from_raw( node.as_ptr() );
-				let result = boxed_node.elem;
-        
-        self.back = boxed_node.front;
-        if let Some( new ) = self.back
+        self.front = boxed_node.back;
+        if let Some( new ) = self.front
         {
-        	( *new.as_ptr() ).back = None;
+          ( *new.as_ptr() ).front = None;
         }
         else
         {
-        	self.front = None;
+          self.back = None;
         }
 
         self.len -= 1;
         result
-			})
-		}
-	}
-  
-	pub fn front( &self ) -> Option< &T >
+      })
+    } 
+  }
+
+  pub fn push_back( &mut self, elem : T )
   {
-	  unsafe
-	  {
-		  self.front.map( | node | &( *node.as_ptr() ).elem )
-	  } 
+    unsafe
+    {
+      let new = NonNull::new_unchecked( Box::into_raw( Box::new( Node
+      {
+        back : None,
+        front : None,
+        elem,
+      })));
+
+      if let Some( old ) = self.back
+      {
+        ( *old.as_ptr() ).back = Some( new );
+        ( *new.as_ptr() ).front = Some( old );
+      }
+      else
+      {
+        self.front = Some( new );
+      }
+
+      self.back = Some( new );
+      self.len += 1;
+    }
+  }
+
+  pub fn pop_back( &mut self ) -> Option< T >
+  {
+    unsafe
+    {
+      self.back.map( | node|
+      {
+        let boxed_node = Box::from_raw( node.as_ptr() );
+        let result = boxed_node.elem;
+        
+        self.back = boxed_node.front;
+        if let Some( new ) = self.back
+        {
+          ( *new.as_ptr() ).back = None;
+        }
+        else
+        {
+          self.front = None;
+        }
+
+        self.len -= 1;
+        result
+      })
+    }
+  }
+  
+  pub fn front( &self ) -> Option< &T >
+  {
+    unsafe
+    {
+      self.front.map( | node | &( *node.as_ptr() ).elem )
+    } 
   }   
 
-	pub fn front_mut( &mut self ) -> Option< &mut T >
+  pub fn front_mut( &mut self ) -> Option< &mut T >
   {
-	  unsafe
-	  {
-		  self.front.map( | node | &mut ( *node.as_ptr() ).elem )
-	  } 
+    unsafe
+    {
+      self.front.map( | node | &mut ( *node.as_ptr() ).elem )
+    } 
   }   
 
   pub fn back( &self ) -> Option< &T >
   {
-	  unsafe
-	  {
-		  self.back.map( | node | &( *node.as_ptr() ).elem )
-	  } 
+    unsafe
+    {
+      self.back.map( | node | &( *node.as_ptr() ).elem )
+    } 
   }   
 
-	pub fn back_mut( &mut self ) -> Option< &mut T >
+  pub fn back_mut( &mut self ) -> Option< &mut T >
   {
-	  unsafe
-	  {
-		  self.back.map( | node | &mut ( *node.as_ptr() ).elem )
-	  } 
+    unsafe
+    {
+      self.back.map( | node | &mut ( *node.as_ptr() ).elem )
+    } 
   }   
 
   pub fn iter( &self ) -> Iter< T >
   {
-  	Iter
-  	{
-  		front : self.front,
-  		back : self.back,
-  		len : self.len,
-  		_pdt : PhantomData,
-  	}
+    Iter
+    {
+      front : self.front,
+      back : self.back,
+      len : self.len,
+      _pdt : PhantomData,
+    }
   }
 
   pub fn iter_mut( &mut self ) -> IterMut< T >
   {
-  	IterMut
-  	{
-  		front : self.front,
-  		back : self.back,
-  		len : self.len,
-  		_pdt : PhantomData,
-  	}
+    IterMut
+    {
+      front : self.front,
+      back : self.back,
+      len : self.len,
+      _pdt : PhantomData,
+    }
   }
 
   pub fn into_iter( self ) -> IntoIter< T >
   {
-  	IntoIter
-  	{
-  		list : self,
-  	}
+    IntoIter
+    {
+      list : self,
+    }
   }
 
-	pub fn len( &self ) -> usize
-	{
-		self.len
-	}
+  pub fn len( &self ) -> usize
+  {
+    self.len
+  }
 
   pub fn is_empty( &self ) -> bool
   {
@@ -242,10 +242,10 @@ impl< T > LinkedList< T >
 
 impl< T > Drop for LinkedList< T >
 {
-	fn drop( &mut self )
-	{
-		while let Some( _ ) = self.pop_front() {}
-	}
+  fn drop( &mut self )
+  {
+    while let Some( _ ) = self.pop_front() {}
+  }
 }
 
 impl< T > Default for LinkedList< T >
@@ -528,28 +528,28 @@ impl< T > ExactSizeIterator for IntoIter< T >
 #[ cfg( test ) ]
 mod test
 {
-	use super::LinkedList;
+  use super::LinkedList;
 
   fn list_from< T : Clone >( v : &[ T ] ) -> LinkedList< T >
   {
-  	v.iter().map( | x | ( *x ).clone() ).collect()
+    v.iter().map( | x | ( *x ).clone() ).collect()
   } 
 
   fn generate_test() -> LinkedList< i32 >
   {
-  	list_from( &[ 0, 1, 2, 3, 4, 5, 6 ] )
+    list_from( &[ 0, 1, 2, 3, 4, 5, 6 ] )
   }
 
-	#[ test ]
-	fn test_basic_front()
-	{
-		let mut list = LinkedList::new();
+  #[ test ]
+  fn test_basic_front()
+  {
+    let mut list = LinkedList::new();
 
-		assert_eq!( list.len(), 0 );
-		assert_eq!( list.pop_front(), None );
-		assert_eq!( list.len(), 0 );
+    assert_eq!( list.len(), 0 );
+    assert_eq!( list.pop_front(), None );
+    assert_eq!( list.len(), 0 );
 
-		list.push_front( 10 );
+    list.push_front( 10 );
     assert_eq!( list.len(), 1 );
     assert_eq!( list.pop_front(), Some( 10 ) );
     assert_eq!( list.len(), 0 );
@@ -576,7 +576,7 @@ mod test
     assert_eq!( list.len(), 0 );
     assert_eq!( list.pop_front(), None );
     assert_eq!( list.len(), 0 );
-	}
+  }
 
   #[ test ]
   fn test_basic()
