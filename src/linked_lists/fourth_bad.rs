@@ -273,12 +273,3 @@ mod test
     assert_eq!( iter.next(), None );
 	}
 }
-
-
-
-
-
-
-
-
-
