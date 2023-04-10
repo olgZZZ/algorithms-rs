@@ -1,3 +1,7 @@
+///
+/// The Stack-Allocated Linked List
+///
+
 pub struct List< 'a, T >
 {
   pub data: T,
